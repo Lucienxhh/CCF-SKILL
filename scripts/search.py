@@ -64,17 +64,6 @@ def search(query, source=None):
 
     return results
 
-def search_with分区(query, is_journal=True):
-    results = search(query)
-
-    if not is_journal:
-        results.pop("zky_2026", None)
-        results.pop("zky_2025", None)
-        results.pop("zky_2023", None)
-        results.pop("zky_2022", None)
-
-    return results
-
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"error": "Usage: python search.py <query> [--ccf-only]"}, ensure_ascii=False, indent=2))
