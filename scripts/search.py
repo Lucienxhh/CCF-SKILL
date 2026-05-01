@@ -77,6 +77,10 @@ def search(query):
         results["zky_2022"] = search_zky(query, 2022)
         return results
 
+    results["zky_2026"] = search_zky(query, None)
+    results["zky_2025"] = search_zky(query, 2025)
+    results["zky_2023"] = search_zky(query, 2023)
+    results["zky_2022"] = search_zky(query, 2022)
     return results
 
 def main():
