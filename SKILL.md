@@ -1,112 +1,143 @@
 ---
 name: CCF
-description: 查询 CCF 推荐期刊/会议评级(A/B/C 或 T1/T2/T3)和中科院/新锐分区(1-4区/TOP)。当用户询问期刊/会议的评级、分区或排名时调用。
+description: 查询 CCF 推荐期刊/会议评级(A/B/C/T1/T2/T3)和中科院/新锐分区(1-4区/TOP)。当用户询问期刊/会议的评级、分区或排名时调用。
 ---
 
-# CCF
-
-查询 CCF 推荐期刊/会议评级和中科院分区的 Skill。
-
-## When to Use
+# CCF Skill
 
 当用户询问以下问题时使用此 skill：
-- "TMC 是 CCF 什么级别？"
-- "计算机学报是 CCF 什么级别？"
-- "TPAMI 的中科院分区是多少？"
-- "TKDE 2025 年的分区是几区？"
-- 查询某个期刊/会议的 CCF 评级
-- 查询某个期刊的中科院分区或 TOP 状态
-- 用户提供了论文引用，需要查询其 CCF 评级
+- 查询期刊/会议的 CCF 评级
+- 查询期刊的中科院分区或新锐分区
+- 查询某期刊/会议属于几区、什么级别
+- 用户提供了论文引用，需要判断其级别
 
-## 引用解析规则
+## 数据源
 
-### 提取顺序
+| 数据源 | 说明 |
+|--------|------|
+| CCF-2026-EN.md | CCF 国际期刊/会议（A/B/C 级） |
+| CCF-2025-CN.md | CCF 中文期刊（T1/T2/T3 级） |
+| ZKY-*.md | 中科院分区（2022/2023/2025） |
+| XR-2026.md | 新锐分区（2026） |
 
-从引用中**按顺序**尝试提取以下信息：
-
-1. **会议名称缩写**（常见格式：`in: 2019 IEEE International Conference on Software Maintenance and Evolution (ICSME)`）
-   - 提取括号中的会议缩写（如 `ICSME`）
-   - 提取 `International Conference on` 或类似关键词前的会议全称
-
-2. **期刊名称**（常见格式：`IEEE Robot. Autom. Lett.`、`Expert Syst. Appl.`）
-   - 提取期刊缩写或全称
-   - 注意：带点缩写如 `Robot. Autom. Lett.` 需识别为 `IEEE Robotics and Automation Letters`
-
-3. **年份**
-   - 优先提取明确的年份（如 `2019`、`2021`）
-   - **如果年份未知或无法确定，默认使用 2026 年**
-
-### 典型引用格式解析示例
-
-#### 会议引用
-```
-[1] A. Barbez, F. Khomh, Y.-G. Guéhéneuc, Deep learning anti-patterns from code metrics history,
-in: 2019 IEEE International Conference on Software Maintenance and Evolution (ICSME), 2019, pp. 114–124.
-```
-- **会议缩写**：`ICSME`
-- **会议全称**：`IEEE International Conference on Software Maintenance and Evolution`
-- **年份**：`2019`
-
-#### 期刊引用（带 DOI）
-```
-[2] D. Bobkov, S. Chen, R. Jian, M.Z. Iqbal, E. Steinbach, Noise-resistant deep learning for object
-classification in three-dimensional point clouds using a point pair descriptor, IEEE Robot. Autom. Lett.
-3 (2018) 865–872, https://doi.org/10.1109/LRA.2018.2792681.
-```
-- **期刊缩写**：`IEEE Robot. Autom. Lett.` → `IEEE Robotics and Automation Letters`
-- **期刊全称**：`IEEE Robotics and Automation Letters`
-- **年份**：`2018`
-
-```
-[4] S. Boutaib, S. Bechikh, F. Palomba, M. Elarbi, M. Makhlouf, L.B. Said, Code smell detection and
-identification in imbalanced environments, Expert Syst. Appl. 166 (2021) 114076.
-```
-- **期刊缩写**：`Expert Syst. Appl.` → `Expert Systems with Applications`
-- **年份**：`2021`
-
-#### 书籍章节引用
-```
-[3] M. Boussaa, W. Kessentini, M. Kessentini, S. Bechikh, S. Ben Chikha, Competitive coevolutionary
-code-smells detection, in: G. Ruhe, Y. Zhang (Eds.), Search Based Software Engineering,
-Springer Berlin Heidelberg, Berlin, Heidelberg, 2013, pp. 50–65.
-```
-- **出版社/会议**：`Springer`（书籍章节，非 CCF 评级对象）
-- **年份**：`2013`
-
-### 默认值规则
-
-| 字段 | 默认值 | 触发条件 |
-|------|--------|----------|
-| 年份 | **2026** | 无法从引用中确定具体年份时 |
-
-## 查询逻辑
-
-| 类型 | 查询方式 | 返回信息 |
-|------|----------|----------|
-| 期刊 | `search.py <简称>` | CCF 评级 + 中科院/新锐分区 |
-| 会议 | `search.py <简称>` | CCF 评级 |
-| 引用解析 | LLM 提取 venue/year，再用 `search.py` 查询 | CCF 评级和分区 |
-
-## Instructions
-
-### 步骤一：解析引用
-
-从引用文本中提取：
-- **venue**：会议缩写或期刊缩写/全称
-- **year**：年份（未知时使用默认值 2026）
-
-### 步骤二：查询 CCF 评级
+## 搜索命令
 
 ```bash
-# 用 venue 查询（无年份）
-python scripts/search.py <venue>
-
-# 用 venue 查询（指定年份）
-python scripts/search.py <venue> --zky <year>
+python scripts/search.py <关键词>
 ```
 
-### 步骤三：返回结果
+返回原始数据行，由 LLM 负责理解和解释。
 
-返回该期刊/会议的：
-- CCF 评级（A/B/C 或 T1/T2/T3）
-- 中科院分区（1-4区/TOP，2026年新锐分区）
+## LLM 理解职责
+
+**search.py 只做简单字符串匹配，语义理解由 LLM 负责：**
+
+### 1. 名称理解与转换
+
+LLM 应能理解以下等价形式：
+
+| 用户输入 | 应查询的关键词 |
+|----------|----------------|
+| TMC | TMC |
+| IEEE Transactions on Mobile Computing | Mobile Computing |
+| 移动计算 | Mobile Computing |
+| 计算机学报 | 计算机学报 |
+| TPAMI | TPAMI |
+| Pattern Analysis and Machine Intelligence | Pattern Analysis |
+
+**常用期刊缩写映射（LLM 应掌握）：**
+
+| 缩写 | 全称 |
+|------|------|
+| TMC | IEEE Transactions on Mobile Computing |
+| TPAMI | IEEE Transactions on Pattern Analysis and Machine Intelligence |
+| TKDE | IEEE Transactions on Knowledge and Data Engineering |
+| TSE | IEEE Transactions on Software Engineering |
+| TOS | ACM Transactions on Storage |
+| TOCS | ACM Transactions on Computer Systems |
+| TOSEM | ACM Transactions on Software Engineering and Methodology |
+| ICSE | International Conference on Software Engineering |
+| FSE | ACM SIGSOFT International Symposium on the Foundations of Software Engineering |
+| ASE | IEEE/ACM International Conference on Automated Software Engineering |
+| ISSTA | International Symposium on Software Testing and Analysis |
+
+### 2. 引用解析
+
+从论文引用中提取期刊/会议信息：
+
+**会议引用特征：**
+- `in: ... Conference ... (XXX)`
+- `Proceedings of the ... (XXX)`
+- `XXX 2023, pp.`（XXX 是会议缩写）
+
+**期刊引用特征：**
+- `IEEE Robot. Autom. Lett.`
+- `Expert Syst. Appl.`
+- 卷号+年份：`166 (2021)`
+
+**提取步骤：**
+1. 识别是会议还是期刊
+2. 提取缩写或全称
+3. 提取年份（可选）
+4. 用提取的关键词调用 search.py
+
+### 3. 返回结果解读
+
+search.py 返回格式示例：
+
+```json
+{
+  "query": "TMC",
+  "results": {
+    "ccf_en": [["", "TMC", "IEEE Transactions on Mobile Computing", "A", "期刊"]],
+    "ccf_cn": [],
+    "zky_2026": [["", "IEEE Transactions on Mobile Computing", "1区", "TOP", "计算机科学"]]
+  },
+  "found": true
+}
+```
+
+**LLM 应解读为：**
+- CCF 评级：A
+- 类型：期刊
+- 新锐分区：1区 TOP
+- 完整名称：IEEE Transactions on Mobile Computing
+
+### 4. 响应格式
+
+直接向用户返回简洁结论：
+
+```
+TMC (IEEE Transactions on Mobile Computing)
+- CCF 评级：A
+- 类型：期刊
+- 新锐分区：1区 TOP（2026）
+```
+
+如果未找到结果：
+```
+未找到相关期刊/会议信息。请确认名称是否正确，或提供论文引用以便提取信息。
+```
+
+## 注意事项
+
+1. **搜索是模糊的**：search.py 使用包含匹配，查询 "Mobile" 会匹配 "IEEE Transactions on Mobile Computing"
+2. **分区仅适用于期刊**：会议没有中科院/新锐分区
+3. **年份默认 2026**：分区查询默认使用最新年份
+4. **中文期刊独立数据源**：中文期刊（如计算机学报）需查询 CCF-2025-CN.md
+
+## 命令行测试
+
+```bash
+# 查询国际期刊
+python scripts/search.py TMC
+python scripts/search.py "Pattern Analysis"
+
+# 查询中文期刊
+python scripts/search.py 计算机学报
+python scripts/search.py 软件学报
+
+# 查询会议
+python scripts/search.py ICSE
+python scripts/search.py FSE
+```
