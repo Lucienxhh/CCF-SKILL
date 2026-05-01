@@ -47,20 +47,35 @@ def search_zky(query, year=None):
         filepath = get_data_path("XR-2026.md")
     return search_in_file(filepath, query)
 
-def search(query, source=None):
+def is_journal(ccf_result):
+    if not ccf_result:
+        return False
+    for item in ccf_result:
+        if len(item) > 4 and "期刊" in item[4]:
+            return True
+    return False
+
+def search(query):
     results = {}
 
-    if source is None or source == "ccf_en":
-        results["ccf_en"] = search_ccf_en(query)
+    ccf_en = search_ccf_en(query)
+    if ccf_en:
+        results["ccf_en"] = ccf_en
+        if is_journal(ccf_en):
+            results["zky_2026"] = search_zky(query, None)
+            results["zky_2025"] = search_zky(query, 2025)
+            results["zky_2023"] = search_zky(query, 2023)
+            results["zky_2022"] = search_zky(query, 2022)
+        return results
 
-    if source is None or source == "ccf_cn":
-        results["ccf_cn"] = search_ccf_cn(query)
-
-    if source is None or source == "zky":
+    ccf_cn = search_ccf_cn(query)
+    if ccf_cn:
+        results["ccf_cn"] = ccf_cn
         results["zky_2026"] = search_zky(query, None)
         results["zky_2025"] = search_zky(query, 2025)
         results["zky_2023"] = search_zky(query, 2023)
         results["zky_2022"] = search_zky(query, 2022)
+        return results
 
     return results
 
