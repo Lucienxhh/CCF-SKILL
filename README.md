@@ -1,6 +1,8 @@
-# CCF
+# CCF.SKILL
 
-查询 CCF 推荐期刊/会议评级和中科院分区的 Agent Skill。符合 [Agent Skills Specification](https://agentskills.io) 标准，兼容 Trae、Claude Code、Cursor、GitHub Copilot、Windsurf 等平台。
+查询 CCF 推荐期刊/会议评级和中科院分区的 Agent Skill。
+
+符合 [Agent Skills Specification](https://agentskills.io) 标准，兼容 Trae、Claude Code、Cursor、GitHub Copilot、Windsurf 等平台。
 
 ## 功能
 
