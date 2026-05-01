@@ -79,8 +79,7 @@ CCF/
 ├── SKILL.md         # Skill 主文件
 ├── README.md        # 本文档
 ├── scripts/
-│   ├── search.py    # 搜索脚本
-│   └── parse.py     # 引用解析模块
+│   └── search.py    # 搜索脚本
 ├── data/
 │   ├── CCF-2026-EN.md  # CCF 国际期刊/会议
 │   ├── CCF-2025-CN.md  # CCF 中文期刊
