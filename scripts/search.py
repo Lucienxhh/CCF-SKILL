@@ -2,6 +2,10 @@ import sys
 import json
 import os
 
+# 分区文件常量
+ZKY_FILES = ["ZKY-2025.md", "ZKY-2023.md", "ZKY-2022.md"]
+XR_FILES = ["XR-2026.md"]
+
 def get_data_path(filename):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     skill_dir = os.path.dirname(script_dir)
@@ -40,12 +44,22 @@ def search_ccf_cn(query):
     filepath = get_data_path("CCF-2025-CN.md")
     return search_in_file(filepath, query)
 
-def search_zky(query, year=None):
-    if year:
-        filepath = get_data_path(f"ZKY-{year}.md")
-    else:
-        filepath = get_data_path("XR-2026.md")
-    return search_in_file(filepath, query)
+def search_fq(query):
+    results = {}
+
+    # 搜索新锐分区
+    for filename in XR_FILES:
+        filepath = get_data_path(filename)
+        key = filename.replace(".md", "").lower()
+        results[key] = search_in_file(filepath, query)
+
+    # 搜索中科院分区
+    for filename in ZKY_FILES:
+        filepath = get_data_path(filename)
+        key = filename.replace(".md", "").lower()
+        results[key] = search_in_file(filepath, query)
+
+    return results
 
 def is_journal(ccf_result):
     if not ccf_result:
@@ -55,12 +69,6 @@ def is_journal(ccf_result):
             return True
     return False
 
-def add_zky_results(results, query):
-    results["zky_2026"] = search_zky(query, None)
-    results["zky_2025"] = search_zky(query, 2025)
-    results["zky_2023"] = search_zky(query, 2023)
-    results["zky_2022"] = search_zky(query, 2022)
-
 def search(query):
     results = {}
 
@@ -68,16 +76,16 @@ def search(query):
     if ccf_en:
         results["ccf_en"] = ccf_en
         if is_journal(ccf_en):
-            add_zky_results(results, query)
+            results.update(search_fq(query))
         return results
 
     ccf_cn = search_ccf_cn(query)
     if ccf_cn:
         results["ccf_cn"] = ccf_cn
-        add_zky_results(results, query)
+        results.update(search_fq(query))
         return results
 
-    add_zky_results(results, query)
+    results.update(search_fq(query))
     return results
 
 def main():
