@@ -55,6 +55,12 @@ def is_journal(ccf_result):
             return True
     return False
 
+def add_zky_results(results, query):
+    results["zky_2026"] = search_zky(query, None)
+    results["zky_2025"] = search_zky(query, 2025)
+    results["zky_2023"] = search_zky(query, 2023)
+    results["zky_2022"] = search_zky(query, 2022)
+
 def search(query):
     results = {}
 
@@ -62,25 +68,16 @@ def search(query):
     if ccf_en:
         results["ccf_en"] = ccf_en
         if is_journal(ccf_en):
-            results["zky_2026"] = search_zky(query, None)
-            results["zky_2025"] = search_zky(query, 2025)
-            results["zky_2023"] = search_zky(query, 2023)
-            results["zky_2022"] = search_zky(query, 2022)
+            add_zky_results(results, query)
         return results
 
     ccf_cn = search_ccf_cn(query)
     if ccf_cn:
         results["ccf_cn"] = ccf_cn
-        results["zky_2026"] = search_zky(query, None)
-        results["zky_2025"] = search_zky(query, 2025)
-        results["zky_2023"] = search_zky(query, 2023)
-        results["zky_2022"] = search_zky(query, 2022)
+        add_zky_results(results, query)
         return results
 
-    results["zky_2026"] = search_zky(query, None)
-    results["zky_2025"] = search_zky(query, 2025)
-    results["zky_2023"] = search_zky(query, 2023)
-    results["zky_2022"] = search_zky(query, 2022)
+    add_zky_results(results, query)
     return results
 
 def main():
