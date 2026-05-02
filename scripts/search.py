@@ -2,7 +2,9 @@ import sys
 import json
 import os
 
-# 分区文件常量
+# 数据文件常量
+CCF_EN_FILE = "CCF-2026-EN.md"
+CCF_CN_FILE = "CCF-2025-CN.md"
 ZKY_FILES = ["ZKY-2025.md", "ZKY-2023.md", "ZKY-2022.md"]
 XR_FILES = ["XR-2026.md"]
 
@@ -37,11 +39,11 @@ def search_in_file(filepath, query):
     return results
 
 def search_ccf_en(query):
-    filepath = get_data_path("CCF-2026-EN.md")
+    filepath = get_data_path(CCF_EN_FILE)
     return search_in_file(filepath, query)
 
 def search_ccf_cn(query):
-    filepath = get_data_path("CCF-2025-CN.md")
+    filepath = get_data_path(CCF_CN_FILE)
     return search_in_file(filepath, query)
 
 def search_fq(query):
