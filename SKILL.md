@@ -1,145 +1,188 @@
 ---
 name: CCF
-description: 查询 CCF 推荐期刊/会议评级(A/B/C/T1/T2/T3)和中科院/新锐分区(1-4区/TOP)。当用户询问期刊/会议的评级、分区或排名时调用。
+summary: 查询 CCF 推荐期刊/会议等级，以及中科院和新锐分区。
+description: 查询期刊或会议的 CCF 等级（A/B/C/T1/T2/T3）与中科院/新锐分区（1-4区/TOP）。支持缩写、全称、中文名称和论文引用解析。
 ---
 
-# CCF Skill
+# Purpose
 
-当用户询问以下问题时使用此 skill：
-- 查询期刊/会议的 CCF 评级
-- 查询期刊的中科院分区或新锐分区
-- 查询某期刊/会议属于几区、什么级别
-- 用户提供了论文引用，需要判断其级别
+本 skill 用于查询：
 
-## 数据源
+- CCF 国际会议/期刊等级
+- CCF 中文期刊等级
+- 中科院分区
+- 新锐分区
 
-| 数据源 | 说明 |
-|--------|------|
-| CCF-2026-EN.md | CCF 国际期刊/会议（A/B/C 级） |
-| CCF-2025-CN.md | CCF 中文期刊（T1/T2/T3 级） |
-| ZKY-*.md | 中科院分区（2022/2023/2025） |
-| XR-2026.md | 新锐分区（2026） |
+支持：
 
-## 搜索命令
+- 缩写查询
+- 全称查询
+- 中文名称查询
+- 论文引用解析
+
+---
+
+# When To Use
+
+当用户：
+
+- 询问期刊或会议级别
+- 询问中科院分区
+- 询问"几区"
+- 询问"TOP 吗"
+- 提供论文引用并询问等级
+
+时使用本 skill。
+
+---
+
+# Workflow
+
+严格按以下流程执行：
+
+1. 提取 venue 名称
+2. 判断是：
+   - 期刊
+   - 会议
+3. 调用 search.py
+4. 解析 JSON
+5. 格式化结果
+6. 返回最终答案
+
+如果输入是论文引用：
+
+1. 提取 venue
+2. 提取年份（可选）
+3. 再执行搜索
+
+---
+
+# Command
 
 ```bash
-python scripts/search.py <关键词>
+python scripts/search.py "<query>"
 ```
 
-**一次查完，LLM 自行过滤：**
-- 会议 → 忽略 zky_* 结果（会议没有分区）
-- 期刊 → 使用 zky_* 结果
+query 可以是：
 
-## LLM 理解职责
+- 缩写
+- 全称
+- 中文名称
+- 论文引用
 
-**search.py 只做简单字符串匹配，语义理解由 LLM 负责：**
+---
 
-### 1. 名称理解与转换
+# Tool Contract
 
-LLM 应能理解以下等价形式：
-
-| 用户输入 | 应查询的关键词 |
-|----------|----------------|
-| TMC | TMC |
-| IEEE Transactions on Mobile Computing | Mobile Computing |
-| 移动计算 | Mobile Computing |
-| 计算机学报 | 计算机学报 |
-| TPAMI | TPAMI |
-| Pattern Analysis and Machine Intelligence | Pattern Analysis |
-
-**常用期刊缩写映射（LLM 应掌握）：**
-
-| 缩写 | 全称 |
-|------|------|
-| TMC | IEEE Transactions on Mobile Computing |
-| TPAMI | IEEE Transactions on Pattern Analysis and Machine Intelligence |
-| TKDE | IEEE Transactions on Knowledge and Data Engineering |
-| TSE | IEEE Transactions on Software Engineering |
-| TOS | ACM Transactions on Storage |
-| TOCS | ACM Transactions on Computer Systems |
-| TOSEM | ACM Transactions on Software Engineering and Methodology |
-| ICSE | International Conference on Software Engineering |
-| FSE | ACM SIGSOFT International Symposium on the Foundations of Software Engineering |
-| ASE | IEEE/ACM International Conference on Automated Software Engineering |
-| ISSTA | International Symposium on Software Testing and Analysis |
-
-### 2. 引用解析
-
-从论文引用中提取期刊/会议信息：
-
-**会议引用特征：**
-- `in: ... Conference ... (XXX)`
-- `Proceedings of the ... (XXX)`
-- `XXX 2023, pp.`（XXX 是会议缩写）
-
-**期刊引用特征：**
-- `IEEE Robot. Autom. Lett.`
-- `Expert Syst. Appl.`
-- 卷号+年份：`166 (2021)`
-
-**提取步骤：**
-1. 识别是会议还是期刊
-2. 提取缩写或全称
-3. 提取年份（可选）
-4. 用提取的关键词调用 search.py
-
-### 3. 返回结果解读
-
-search.py 返回格式示例：
+search.py 返回 JSON：
 
 ```json
 {
   "query": "TMC",
+  "normalized_query": "IEEE Transactions on Mobile Computing",
+  "match_type": "abbreviation",
+  "found": true,
   "results": {
-    "ccf_en": [["", "TMC", "IEEE Transactions on Mobile Computing", "A", "期刊"]],
-    "ccf_cn": [],
-    "zky_2026": [["", "IEEE Transactions on Mobile Computing", "1区", "TOP", "计算机科学"]]
-  },
-  "found": true
+    "ccf": [],
+    "partition": []
+  }
 }
 ```
 
-**LLM 应解读为：**
-- CCF 评级：A
-- 类型：期刊
-- 新锐分区：1区 TOP
-- 完整名称：IEEE Transactions on Mobile Computing
+---
 
-### 4. 响应格式
+# Result Interpretation
 
-直接向用户返回简洁结论：
+## ccf
 
+```json
+{
+  "source": "CCF-2026-EN",
+  "short_name": "TMC",
+  "full_name": "IEEE Transactions on Mobile Computing",
+  "rank": "A",
+  "category": "期刊"
+}
 ```
+
+## partition
+
+```json
+{
+  "source": "ZKY-2025",
+  "name": "IEEE Transactions on Mobile Computing",
+  "zone": "1区",
+  "top": true,
+  "field": "计算机科学"
+}
+```
+
+---
+
+# Response Policy
+
+直接返回简洁结果。
+
+示例：
+
+```text
 TMC (IEEE Transactions on Mobile Computing)
-- CCF 评级：A
+
+- CCF：A
 - 类型：期刊
-- 新锐分区：1区 TOP（2026）
+- 中科院分区：1区 TOP（2025）
 ```
 
-如果未找到结果：
+会议不要返回分区。
+
+---
+
+# Failure Policy
+
+如果 found=false：
+
+按以下顺序重试：
+
+1. 去掉标点
+2. 尝试缩写
+3. 尝试全称
+4. 尝试引用解析
+
+若仍失败：
+
+```text
+未找到相关期刊或会议信息，请提供更完整名称或论文引用。
 ```
-未找到相关期刊/会议信息。请确认名称是否正确，或提供论文引用以便提取信息。
+
+不要编造结果。
+
+---
+
+# Constraints
+
+- 会议没有中科院分区
+- 默认优先使用最新分区数据
+- search.py 只负责字符串匹配
+- 不要假设模糊匹配一定正确
+- 多结果时优先完全匹配
+- 不要返回未经确认的结果
+
+---
+
+# Examples
+
+## Query
+
+```text
+TPAMI 是什么级别？
 ```
 
-## 注意事项
+## Response
 
-1. **搜索是模糊的**：search.py 使用包含匹配，查询 "Mobile" 会匹配 "IEEE Transactions on Mobile Computing"
-2. **分区仅适用于期刊**：会议没有中科院/新锐分区
-3. **年份默认 2026**：分区查询默认使用最新年份
-4. **中文期刊独立数据源**：中文期刊（如计算机学报）需查询 CCF-2025-CN.md
+```text
+TPAMI (IEEE Transactions on Pattern Analysis and Machine Intelligence)
 
-## 命令行测试
-
-```bash
-# 查询国际期刊
-python scripts/search.py TMC
-python scripts/search.py "Pattern Analysis"
-
-# 查询中文期刊
-python scripts/search.py 计算机学报
-python scripts/search.py 软件学报
-
-# 查询会议
-python scripts/search.py ICSE
-python scripts/search.py FSE
+- CCF：A
+- 类型：期刊
+- 中科院分区：1区 TOP（2025）
 ```
